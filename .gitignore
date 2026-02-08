@@ -1,3 +1,17 @@
+# Python cache
 __pycache__/
 *.pyc
+
+# Data files
 *.csv
+
+# Virtual environment
+.venv/
+env/
+
+# OS files
+.DS_Store
+
+# Model files (keep if you WANT them in GitHub)
+# If you want to upload .pkl, comment these out
+# *.pkl
