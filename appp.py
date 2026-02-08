@@ -28,7 +28,7 @@ You can **type text manually** or **upload a CSV file** for bulk analysis.
 st.divider()
 
 # ---------------- Accuracy Info ----------------
-st.info("📊 Model Accuracy: ~88% (evaluated on test dataset)")
+st.info("📊 Model Accuracy: Evaluated during training (~88%)")
 
 st.divider()
 
@@ -69,11 +69,7 @@ st.markdown(
     """
 ## 📂 Analyze CSV File
 
-Upload a CSV file to analyze multiple text entries at once.
-
-### CSV requirements:
-- The file must contain a column named **`text`**
-- Each row should contain one text entry
+Upload a CSV file and **select the column that contains text**.
 """
 )
 
@@ -82,19 +78,39 @@ uploaded_file = st.file_uploader("📁 Upload CSV file", type=["csv"])
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    if "text" not in df.columns:
-        st.error("❌ CSV file must contain a column named 'text'.")
-    else:
-        vec = vectorizer.transform(df["text"])
-        df["Sentiment"] = model.predict(vec)
-        df["Sentiment"] = df["Sentiment"].map({
+    # Allow user to select ANY column for text
+    text_column = st.selectbox(
+        "🧾 Select the column containing text",
+        df.columns
+    )
+
+    if text_column:
+        # Convert selected column to string and vectorize
+        vec = vectorizer.transform(df[text_column].astype(str))
+        predictions = model.predict(vec)
+
+        # Add sentiment columns
+        df["Sentiment"] = predictions
+        df["Sentiment Label"] = df["Sentiment"].map({
             1: "Positive 😊",
             0: "Negative 😞"
         })
 
-        st.success("✅ Sentiment analysis completed!")
-        st.dataframe(df.head())
+        # Count positives and negatives
+        positive_count = (df["Sentiment"] == 1).sum()
+        negative_count = (df["Sentiment"] == 0).sum()
 
+        st.success("✅ CSV sentiment analysis completed!")
+
+        # Display counts nicely
+        col1, col2 = st.columns(2)
+        col1.metric("😊 Positive statements", positive_count)
+        col2.metric("😞 Negative statements", negative_count)
+
+        # Display the full CSV with sentiment labels
+        st.dataframe(df)
+
+        # Allow download of results
         st.download_button(
             label="⬇️ Download Results",
             data=df.to_csv(index=False),
